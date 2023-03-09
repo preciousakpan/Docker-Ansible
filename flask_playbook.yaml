@@ -1,0 +1,71 @@
+---
+- name: Flask Setup
+  hosts: all
+  become: yes
+  tasks:
+  - name: Install Virtualenv
+    pip:
+      name: virtualenv
+
+  - name: Install Git
+    apt:
+      name: git
+      state: present
+
+  - name: Clone Repo
+    git:
+      repo: https://github.com/preciousakpan/pomodoro.git
+      dest: /home/ubuntu/pomodoro
+
+  - name: Change Directory and Create Venv
+    shell:
+      cmd: python3 -m virtualenv venv
+      chdir: /home/ubuntu/pomodoro/
+
+  - name: Activate Virtualenv
+    pip:
+      requirements: /home/ubuntu/pomodoro/requirements.txt
+      virtualenv: /home/ubuntu/pomodoro/venv
+
+  - name: Install Gunicorn
+    pip:
+      name: gunicorn
+      virtualenv: /home/ubuntu/pomodoro/venv
+
+  - name: Copy Gunicorn Service File
+    shell:
+      cmd: cp gunicorn.service /etc/systemd/system/pomo.service
+      chdir: /home/ubuntu/pomodoro
+
+  - name: Reload Daemon
+    systemd:
+      daemon_reload: true
+
+  - name: Start Gunicorn
+    service:
+      name: pomo
+      state: started
+
+  - name: Enable Gunicorn
+    service:
+      name: pomo
+      enabled: yes
+
+  - name: Delete Default Nginx Conf File
+    shell:
+      cmd: rm default
+      chdir: /etc/nginx/sites-enabled
+
+  - name: Copy Nginx Conf File
+    copy:
+      src: /etc/nginx/sites-enabled/default
+      dest: /etc/nginx/sites-enabled/default
+      owner: ubuntu
+      group: www-data
+      mode: '0644'
+
+  - name: Restart Nginx
+    service:
+      name: nginx
+      state: restarted
+

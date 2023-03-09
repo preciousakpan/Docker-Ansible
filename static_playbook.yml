@@ -1,0 +1,29 @@
+---
+- name: Deploy Static App
+  hosts: all
+  become: yes
+
+  tasks:
+
+  - name: Update apt
+    apt:
+      update_cache: yes
+  - name: Install Nginx
+    apt:
+      name: nginx
+      state: latest
+  - name: Clone Repository
+    git:
+      repo: https://github.com/preciousakpan/stop-watch-app.git
+      dest: /var/www/html/stopwatch
+  - name: Copy nginx conf
+    copy:
+      src: /home/ubuntu/ansible/nginx
+      dest: /etc/nginx/sites-enabled/default
+      owner: www-data
+      group: www-data
+      mode: 0644
+  - name: Restart Nginx
+    service:
+      name: nginx
+      state: restarted

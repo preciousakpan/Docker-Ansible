@@ -1,0 +1,59 @@
+---
+- name: Deploy Flask App
+  hosts: all
+  become: yes
+  tasks:
+  - name: Update Apt, Install Python, Pip and Git
+    apt:
+      name:
+        - python3
+        - python3-pip
+        - git
+      state: present
+      update_cache: yes
+  - name: Install Virtual Environment
+    pip:
+      name: virtualenv
+  - name: Clone Repository
+    git:
+      repo: https://github.com/preciousakpan/FlaskChess.git
+      dest: /home/ubuntu/flask
+  - name: Create Virtual Environment
+    shell:
+      cmd: python3 -m virtualenv venv
+      chdir: /home/ubuntu/flask
+  - name: Install Requirements in Virtual Environment
+    pip:
+      requirements: /home/ubuntu/flask/requirements.txt
+      virtualenv: /home/ubuntu/flask/venv
+  - name: Install Gunicorn
+    pip:
+      name: gunicorn
+      virtualenv: /home/ubuntu/flask/venv
+  - name: Copy wsgi file
+    copy:
+      src: /home/ubuntu/ansible/wsgi.py
+      dest: /home/ubuntu/flask/wsgi.py
+  - name: Copy Gunicorn Service File
+    copy:
+      src: /home/ubuntu/ansible/gunicorn.service
+      dest: /etc/systemd/system/gunicorn.service
+  - name: Start Gunicorn Service
+    service:
+      name: gunicorn
+      state: started
+  - name: Enable Gunicorn Service
+    service:
+      name: gunicorn
+      state: enabled
+  - name: Copy Nginx File
+    copy:
+      src: /home/ubuntu/ansible/nginx
+      dest: /etc/nginx/sites-enabled/default
+  - name: Changing Permissions of Home Directory
+    shell:
+      cmd: chmod 755 /home/ubuntu
+  - name: Restart Nginx
+    service:
+      name: nginx
+      state: restarted
